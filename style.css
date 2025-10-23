@@ -1,0 +1,113 @@
+body {
+  background-color: antiquewhite;
+  font-family: "IBM Plex Sans", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+  color: #e6d6c7;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+input[type="range"] {
+  margin: 0px;
+  margin-top: 5px;
+  width: 100%;
+}
+
+table {
+  margin-top: 15px;
+  border: none;
+}
+
+td {
+  padding: 0px;
+  padding-left: 10px;
+  padding-right: 5px;
+  border: none;
+}
+
+.ml5 {
+  margin-left: 5px;
+}
+
+select {
+  flex: 1;
+  margin-left: 15px;
+}
+
+main {
+  max-width: fit-content;
+  padding: 15px;
+  margin: auto;
+  margin-top: 15px;
+  display: flex;
+  flex-direction: column;
+  background-color: #3f3529;
+  border: solid 3px #281f17;
+}
+
+.bold {
+  font-weight: 800;
+}
+
+.image-ingredient {
+  display: block;
+  width: 100%;
+}
+
+.cell-image {
+  width: 64px;
+  padding: 0px;
+  background-color: #eed0b1;
+  border: solid 3px #281f17;
+  -webkit-box-shadow: inset 0px 0px 8px 5px rgba(0, 0, 0, 0.2);
+  -moz-box-shadow: inset 0px 0px 8px 5px rgba(0, 0, 0, 0.2);
+  box-shadow: inset 0px 0px 8px 5px rgba(0, 0, 0, 0.2);
+}
+
+.ale-select-container {
+  display: flex;
+}
+
+#barrel-table td {
+  text-align: center;
+}
+
+.ale-info {
+  display: flex;
+  align-items: end;
+}
+
+.max-ale-ingredients {
+  font-weight: 200;
+  font-size: 13px;
+}
+
+.ale-count {
+  flex-grow: 1;
+}
+
+.bold {
+  font-weight: bold;
+}
+
+.github {
+  min-width: 326px;
+  padding-top: 5px;
+  color: #3f3529;
+  font-weight: 300;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  main {
+    min-width: 290px;
+    padding: 15px;
+    margin: auto;
+    margin-top: 15px;
+    display: flex;
+    background-color: #3f3529;
+    border: solid 3px #281f17;
+  } 
+}
