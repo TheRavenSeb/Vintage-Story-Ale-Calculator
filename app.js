@@ -105,6 +105,8 @@
         addRow('Category', a.category);
         addRow('Source', a.source);
         addRow('Sealing time', `${a.sealingDays} days`);
+        addRow('Saturation per Liter', `${a.baseSat} sat/L`);
+        addRow('Nutrition', `${a.category}`)
 
         if (a.category === 'grain') {
             addRow('Water per batch', `${a.inputFlourLiters} L`);
