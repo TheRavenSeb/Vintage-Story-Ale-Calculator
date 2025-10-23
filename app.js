@@ -77,13 +77,14 @@
         ingredientResult.innerHTML = `
             <strong>Ingredient conversion</strong><br/>
             Juice from berries: ${juiceFromBerries.toFixed(2)} L<br/>
-            Juice from flour: ${juiceFromFlour.toFixed(2)} L<br/>
+             from flour: ${juiceFromFlour.toFixed(2)} L<br/>
             <strong>Total juice:</strong> ${totalJuice.toFixed(2)} L<br/>
             Full ${recipe.name} batches: ${batches}<br/>
             Remainder juice: ${remainderJuice.toFixed(2)} L<br/>
             Estimated sealing time: ${sealingDays} days (flat)<br/>
             <strong>Barrels (50L) filled from total juice:</strong><br/>
             Full 50L barrels: ${fullBarrels}<br/>
+            Total barrels: ${Math.ceil(totalJuice / 50)}<br/>
             Remainder liters: ${remainderLiters.toFixed(2)} L
         `;
     }
@@ -106,8 +107,8 @@
         addRow('Sealing time', `${a.sealingDays} days`);
 
         if (a.category === 'grain') {
-            addRow('Water per batch', `${a.inputWaterLiters} L`);
-            addRow('Flour per batch', `${a.inputFlourLiters} L`);
+            addRow('Water per batch', `${a.inputFlourLiters} L`);
+            addRow('Flour per batch', `${a.inputFlourLiters} (pieces)`);
         }
 
     addRow('Juice (ale) per batch', `${a.juicePerBatch} L`);
@@ -117,9 +118,10 @@
     addRow('Sealing time (flat)', `${sealing} days`);
 
         if (a.distillRatio) {
-            const distilledPerBatch = a.juicePerBatch / a.distillRatio;
+            const distilledPerBatch = b.liters / a.distillRatio;
             addRow('Distillation ratio', `${a.distillRatio}:1 (fermented:distilled)`);
             addRow('Distilled output per batch', `${distilledPerBatch.toFixed(2)} L`);
+            addRow("Aqua vitae output per batch", `${(distilledPerBatch / 0.5).toFixed(0.5)} L`);
         }
     }
 
@@ -130,8 +132,11 @@
             const tdName = document.createElement('td'); tdName.textContent = b.name;
             const tdSize = document.createElement('td'); tdSize.textContent = `${b.liters} L`;
             const filled = (a.juicePerBatch / b.liters) || 0;
+            if (b.liters > 50) filled++;
+            if (b.liters < 50 && b.liters > 0) filled++;
             const tdFilled = document.createElement('td'); tdFilled.textContent = `${filled.toFixed(2)} barrels per batch`;
-            tr.appendChild(tdName); tr.appendChild(tdSize); tr.appendChild(tdFilled);
+           // const tdtotalbarrels = document.createElement('td'); tdtotalbarrels.textContent = `${(b.liters / 50).toFixed(2)} total barrels per batch`;
+            tr.appendChild(tdName); tr.appendChild(tdSize); tr.appendChild(tdFilled); tr.appendChild(tdtotalbarrels);
             barrelTbody.appendChild(tr);
         });
     }
