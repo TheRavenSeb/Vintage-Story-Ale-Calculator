@@ -77,15 +77,16 @@
         ingredientResult.innerHTML = `
             <strong>Ingredient conversion</strong><br/>
             Juice from berries: ${juiceFromBerries.toFixed(2)} L<br/>
-             from flour: ${juiceFromFlour.toFixed(2)} L<br/>
+             from flour: ${juiceFromFlour.toFixed(2)} L<br/><br/>
             <strong>Total juice:</strong> ${totalJuice.toFixed(2)} L<br/>
             Full ${recipe.name} batches: ${batches}<br/>
             Remainder juice: ${remainderJuice.toFixed(2)} L<br/>
-            Estimated sealing time: ${sealingDays} days (flat)<br/>
+            Estimated sealing time: ${sealingDays} days (flat)<br/><br/>
             <strong>Barrels (50L) filled from total juice:</strong><br/>
             Full 50L barrels: ${fullBarrels}<br/>
             Total barrels: ${Math.ceil(totalJuice / 50)}<br/>
             Remainder liters: ${remainderLiters.toFixed(2)} L
+            <br/>
         `;
     }
 
