@@ -47,9 +47,14 @@
     function setTheme(theme) {
         const validThemes = ['moss', 'forge', 'fire', 'clay'];
         const selectedTheme = validThemes.includes(theme) ? theme : 'moss';
+        document.documentElement.setAttribute('data-theme', selectedTheme);
         document.documentElement.dataset.theme = selectedTheme;
         if (themeSelect) themeSelect.value = selectedTheme;
-        localStorage.setItem('brew-barrel-theme', selectedTheme);
+        try {
+            localStorage.setItem('brew-barrel-theme', selectedTheme);
+        } catch {
+            // Theme switching still works when storage is blocked.
+        }
     }
 
     async function shareSetup() {
@@ -127,7 +132,13 @@
 
     populateRecipes();
     loadSetupFromUrl();
-    setTheme(localStorage.getItem('brew-barrel-theme') || 'moss');
+    let savedTheme = 'moss';
+    try {
+        savedTheme = localStorage.getItem('brew-barrel-theme') || 'moss';
+    } catch {
+        // Use the default theme when storage is blocked.
+    }
+    setTheme(savedTheme);
     const update = () => render(dataset.find(recipe => recipe.id === select.value) || dataset[0]);
     select.addEventListener('change', update);
     targetInput.addEventListener('input', update);
