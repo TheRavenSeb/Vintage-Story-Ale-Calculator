@@ -1,167 +1,88 @@
-// App script for index.html
-// Reads `window.alcohols` dataset and renders selection, fermentation and barrel info.
+// App script for index.html. All calculations run locally in the browser.
 (function () {
-    const dataset = (typeof window !== 'undefined' && window.alcohols && window.alcohols.length) ? window.alcohols : [];
+    const dataset = window.alcohols || [];
+    const select = document.getElementById('ale-select');
+    const targetInput = document.getElementById('target-output');
+    if (!select || !targetInput || !dataset.length) return;
 
-    // In Vintage Story a barrel can hold up to 50L
-    const barrels = [
-        { id: 'barrel50', name: 'Barrel (50L)', liters: 50 }
-    ];
+    const $ = id => document.getElementById(id);
+    const whole = value => Math.ceil(value);
+    const liters = value => `${value.toFixed(1).replace('.0', '')} L`;
+    const item = value => `${whole(value).toLocaleString()} ${whole(value) === 1 ? 'item' : 'items'}`;
 
-    const sel = document.getElementById('ale-select');
-    const aleTbody = document.getElementById('ale-tbody');
-    const barrelTbody = document.getElementById('barrel-tbody');
-    if (!sel || !aleTbody || !barrelTbody) return;
-
-    function formatDays(n){ return `${n.toFixed(1)} days`; }
-
-    function populate() {
-        sel.innerHTML = '';
-        dataset.forEach((a, i) => {
-            const o = document.createElement('option');
-            o.value = a.id;
-            o.textContent = a.name;
-            if (i === 0) o.selected = true;
-            sel.appendChild(o);
+    function populateRecipes() {
+        dataset.forEach((recipe, index) => {
+            const option = document.createElement('option');
+            option.value = recipe.id;
+            option.textContent = recipe.name;
+            option.selected = index === 0;
+            select.appendChild(option);
         });
     }
 
-    // Ingredient input elements
-    const berriesInput = document.getElementById('berries-input');
-    const flourInput = document.getElementById('flour-input');
-    const calcIngredientsBtn = document.getElementById('calc-ingredients');
-    const ingredientResult = document.getElementById('ingredient-result');
-    const flourGroup = document.getElementById('flour-group');
-    const berriesGroup = document.getElementById('berries-group');
-
-    // Conversion helpers (assumptions based on wiki/examples):
-    // - Fruit juices are produced from a fruitpress; using an earlier assumption: 16 berries -> 5 L juice.
-    // - Grain-based ale: 5L water + 5 flour -> 1L ale. If user supplies only flour liters, assume equal water available.
-    function berriesToJuiceL(berriesCount) {
-        return (berriesCount / 16) * 5;
+    function getPlan(recipe, requestedOutput) {
+        const batches = Math.max(1, whole(requestedOutput / recipe.outputPerBatch));
+        const output = batches * recipe.outputPerBatch;
+        const liquidInput = batches * recipe.inputLiquidPerBatch;
+        const distilled = output / recipe.distillRatio;
+        return { batches, output, liquidInput, distilled, aquaVitae: distilled / 2, distillationSeconds: output * 20 };
     }
 
-    function flourToJuiceL(flourLiters) {
-        // flourLiters / 5 => juice liters (since 5 flour -> 1L ale assuming water paired)
-        return flourLiters / 5;
+    function addResource(icon, name, amount, detail) {
+        const card = document.createElement('div');
+        card.className = 'resource';
+        card.innerHTML = `<span class="resource-icon">${icon}</span><div><strong>${amount}</strong><span>${name}</span><small>${detail}</small></div>`;
+        $('resource-list').appendChild(card);
     }
 
-    function calcFromIngredients() {
-        const berries = parseFloat(berriesInput && berriesInput.value) || 0;
-        const flour = parseFloat(flourInput && flourInput.value) || 0;
-        const selectedId = sel.value;
-        const recipe = dataset.find(x => x.id === selectedId) || dataset[0];
-        if (!recipe) return;
+    function formatDuration(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = Math.round(seconds % 60);
+        return `${minutes}m ${remainingSeconds}s`;
+    }
 
-        // Compute juice from available ingredients
-        const juiceFromBerries = berriesToJuiceL(berries);
-        let juiceFromFlour = 0;
-        if (flour > 0) {
-            // assume equal water available for simplicity
-            juiceFromFlour = flourToJuiceL(flour);
+    function render(recipe) {
+        const requestedOutput = Math.max(1, Number(targetInput.value) || recipe.outputPerBatch);
+        const plan = getPlan(recipe, requestedOutput);
+        const inputBarrels = whole(plan.liquidInput / 50);
+        const fruitNeeded = plan.liquidInput / 5 * 16;
+        const honeycombsNeeded = plan.liquidInput * 5;
+
+        $('recipe-hint').textContent = `${recipe.source} · ${recipe.outputPerBatch} L output per full barrel · ${recipe.sealingDays} days sealed`;
+        $('summary-output').textContent = liters(plan.output);
+        $('summary-barrels').textContent = `${plan.batches}`;
+        $('summary-time').textContent = `${recipe.sealingDays}d`;
+        $('summary-input').textContent = liters(plan.liquidInput);
+
+        const resourceList = $('resource-list');
+        resourceList.innerHTML = '';
+        if (recipe.inputType === 'fruit') {
+            addResource('🍎', 'Fruit to press', item(fruitNeeded), '16 fruit makes 5 L juice');
+            addResource('🪣', 'Fruit juice', liters(plan.liquidInput), 'Ferment in a barrel');
+        } else if (recipe.inputType === 'honey') {
+            addResource('🍯', 'Honeycombs', item(honeycombsNeeded), '5 honeycombs make 1 L honey');
+            addResource('🪣', 'Honey', liters(plan.liquidInput), 'Ferment in a barrel');
+        } else {
+            addResource('🌾', recipe.source.split(' + ')[0], item(plan.batches * recipe.inputFlourPerBatch), '5 flour per 1 L ale');
+            addResource('💧', 'Water', liters(plan.batches * recipe.inputWaterPerBatch), '5 L water per 1 L ale');
         }
-        const totalJuice = juiceFromBerries + juiceFromFlour;
+        addResource('🛢️', 'Barrels', item(inputBarrels), '50 L maximum per barrel');
 
-        // How many full recipe batches can this make?
-        const batches = recipe.juicePerBatch > 0 ? Math.floor(totalJuice / recipe.juicePerBatch) : 0;
-        const remainderJuice = totalJuice - (batches * recipe.juicePerBatch);
+        $('timeline').innerHTML = `
+            <div class="timeline-step"><span>01</span><div><strong>Prepare the ingredients</strong><p>${recipe.inputType === 'fruit' ? 'Press the fruit into juice.' : recipe.inputType === 'honey' ? 'Squeeze honeycombs into honey.' : 'Combine flour and water in the barrel.'}</p></div><time>now</time></div>
+            <div class="timeline-step"><span>02</span><div><strong>Seal ${plan.batches} ${plan.batches === 1 ? 'barrel' : 'barrels'}</strong><p>Leave the ${recipe.name.toLowerCase()} sealed until fermentation is complete.</p></div><time>${recipe.sealingDays}d</time></div>
+            <div class="timeline-step"><span>03</span><div><strong>Enjoy your ${recipe.name.toLowerCase()}</strong><p>${recipe.outputPerBatch === 50 ? 'Each full barrel produces 50 L.' : `Each full barrel produces ${recipe.outputPerBatch} L.`} Fermented alcohol provides 80 satiety per liter.</p></div><time>ready</time></div>
+            <div class="timeline-step optional"><span>04</span><div><strong>Optional: distill</strong><p>${liters(plan.output)} fermented alcohol becomes ${liters(plan.distilled)} distilled alcohol.</p></div><time>${formatDuration(plan.distillationSeconds)}</time></div>`;
 
-    // Fermentation time: use flat sealingDays (7 for fruit, 14 for grain) per wiki
-    const sealingDays = recipe.sealingDays || (recipe.category === 'grain' ? 14 : 7);
-
-    // Barrel fills for total juice (full 50L barrels only)
-    const fullBarrels = Math.floor(totalJuice / 50);
-    const remainderLiters = totalJuice - fullBarrels * 50;
-
-        // Render a short summary
-        ingredientResult.innerHTML = `
-            <strong>Ingredient conversion</strong><br/>
-            Juice from berries: ${juiceFromBerries.toFixed(2)} L<br/>
-             from flour: ${juiceFromFlour.toFixed(2)} L<br/><br/>
-            <strong>Total juice:</strong> ${totalJuice.toFixed(2)} L<br/>
-            Full ${recipe.name} batches: ${batches}<br/>
-            Remainder juice: ${remainderJuice.toFixed(2)} L<br/>
-            Estimated sealing time: ${sealingDays} days (flat)<br/><br/>
-            <strong>Barrels (50L) filled from total juice:</strong><br/>
-            Full 50L barrels: ${fullBarrels}<br/>
-            Total barrels: ${Math.ceil(totalJuice / 50)}<br/>
-            Remainder liters: ${remainderLiters.toFixed(2)} L
-            <br/>
-        `;
+        $('brew-notes').innerHTML = `
+            <div class="note-row"><strong>Distillation</strong><span>${recipe.distillRatio}:1 fermented to distilled · 20 seconds per liter of input</span></div>
+            <div class="note-row"><strong>Second distillation</strong><span>${liters(plan.distilled)} distilled alcohol becomes ${liters(plan.aquaVitae)} aqua vitae at a 2:1 ratio.</span></div>
+            <div class="note-row"><strong>Nutrition</strong><span>${recipe.nutrition} nutrition · ${recipe.note || 'Fermented alcohol provides 80 satiety per liter and lasts 140 days.'}</span></div>`;
     }
 
-    if (calcIngredientsBtn) calcIngredientsBtn.addEventListener('click', calcFromIngredients);
-
-    function renderInfo(a) {
-        aleTbody.innerHTML = '';
-        const addRow = (label, value) => {
-            const tr = document.createElement('tr');
-            const td1 = document.createElement('td'); td1.textContent = label;
-            const td2 = document.createElement('td'); td2.textContent = value;
-            tr.appendChild(td1); tr.appendChild(td2);
-            aleTbody.appendChild(tr);
-        };
-
-        addRow('Name', a.name);
-        addRow('Category', a.category);
-        addRow('Source', a.source);
-        addRow('Sealing time', `${a.sealingDays} days`);
-        addRow('Saturation per Liter', `${a.baseSat} sat/L`);
-        addRow('Nutrition', `${a.category}`)
-
-        if (a.category === 'grain') {
-            addRow('Water per batch', `${a.inputFlourLiters} L`);
-            addRow('Flour per batch', `${a.inputFlourLiters} (pieces)`);
-        }
-
-    addRow('Juice (ale) per batch', `${a.juicePerBatch} L`);
-
-    // Sealing time is flat per category per wiki: 7 days for fruit/breadfruit, 14 days for grain/mead
-    const sealing = a.sealingDays || (a.category === 'grain' ? 14 : 7);
-    addRow('Sealing time (flat)', `${sealing} days`);
-
-        if (a.distillRatio) {
-            const distilledPerBatch = b.liters / a.distillRatio;
-            addRow('Distillation ratio', `${a.distillRatio}:1 (fermented:distilled)`);
-            addRow('Distilled output per batch', `${distilledPerBatch.toFixed(2)} L`);
-            addRow("Aqua vitae output per batch", `${(distilledPerBatch / 0.5).toFixed(0.5)} L`);
-        }
-    }
-
-    function renderBarrels(a) {
-        barrelTbody.innerHTML = '';
-        barrels.forEach(b => {
-            const tr = document.createElement('tr');
-            const tdName = document.createElement('td'); tdName.textContent = b.name;
-            const tdSize = document.createElement('td'); tdSize.textContent = `${b.liters} L`;
-            const filled = (a.juicePerBatch / b.liters) || 0;
-            if (b.liters > 50) filled++;
-            if (b.liters < 50 && b.liters > 0) filled++;
-            const tdFilled = document.createElement('td'); tdFilled.textContent = `${filled.toFixed(2)} barrels per batch`;
-           // const tdtotalbarrels = document.createElement('td'); tdtotalbarrels.textContent = `${(b.liters / 50).toFixed(2)} total barrels per batch`;
-            tr.appendChild(tdName); tr.appendChild(tdSize); tr.appendChild(tdFilled); tr.appendChild(tdtotalbarrels);
-            barrelTbody.appendChild(tr);
-        });
-    }
-
-    sel.addEventListener('change', () => {
-        const id = sel.value;
-        const a = dataset.find(x => x.id === id) || dataset[0];
-        if (!a) return;
-    // show/hide flour input depending on category
-    if (flourGroup) flourGroup.style.display = a.category === 'grain' ? '' : 'none';
-    if (berriesGroup) berriesGroup.style.display = a.category === 'grain' ? 'none' : '';
-        renderInfo(a);
-        renderBarrels(a);
-    });
-
-    // init
-    populate();
-    if (dataset[0]) {
-    // ensure flour/berries group visibility on init
-    if (flourGroup) flourGroup.style.display = dataset[0].category === 'grain' ? '' : 'none';
-    if (berriesGroup) berriesGroup.style.display = dataset[0].category === 'grain' ? 'none' : '';
-        renderInfo(dataset[0]);
-        renderBarrels(dataset[0]);
-    }
+    populateRecipes();
+    const update = () => render(dataset.find(recipe => recipe.id === select.value) || dataset[0]);
+    select.addEventListener('change', update);
+    targetInput.addEventListener('input', update);
+    update();
 })();
