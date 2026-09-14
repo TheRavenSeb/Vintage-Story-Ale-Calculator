@@ -3,9 +3,13 @@
     const dataset = window.alcohols || [];
     const select = document.getElementById('ale-select');
     const targetInput = document.getElementById('target-output');
+    const recipeOptions = document.getElementById('recipe-options');
     if (!select || !targetInput || !dataset.length) return;
 
     const $ = id => document.getElementById(id);
+    const themeSelect = $('theme-select');
+    const shareButton = $('share-setup');
+    const shareStatus = $('share-status');
     const whole = value => Math.ceil(value);
     const liters = value => `${value.toFixed(1).replace('.0', '')} L`;
     const item = value => `${whole(value).toLocaleString()} ${whole(value) === 1 ? 'item' : 'items'}`;
@@ -17,7 +21,47 @@
             option.textContent = recipe.name;
             option.selected = index === 0;
             select.appendChild(option);
+
+            const choice = document.createElement('label');
+            choice.className = 'recipe-option';
+            choice.innerHTML = `<input type="radio" name="recipe-choice" value="${recipe.id}"${index === 0 ? ' checked' : ''}><span><strong>${recipe.name}</strong><small>${recipe.category} · ${recipe.outputPerBatch} L</small></span>`;
+            const radio = choice.querySelector('input');
+            radio.addEventListener('change', () => {
+                select.value = radio.value;
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+            recipeOptions.appendChild(choice);
         });
+    }
+
+    function loadSetupFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        if (dataset.some(recipe => recipe.id === params.get('recipe'))) {
+            select.value = params.get('recipe');
+            const radio = recipeOptions.querySelector(`input[value="${select.value}"]`);
+            if (radio) radio.checked = true;
+        }
+        if (params.get('output')) targetInput.value = Math.max(1, Number(params.get('output')) || 50);
+    }
+
+    function setTheme(theme) {
+        const validThemes = ['moss', 'forge', 'fire', 'clay'];
+        const selectedTheme = validThemes.includes(theme) ? theme : 'moss';
+        document.documentElement.dataset.theme = selectedTheme;
+        if (themeSelect) themeSelect.value = selectedTheme;
+        localStorage.setItem('brew-barrel-theme', selectedTheme);
+    }
+
+    async function shareSetup() {
+        const url = new URL(window.location.href);
+        url.search = new URLSearchParams({ recipe: select.value, output: targetInput.value }).toString();
+        try {
+            await navigator.clipboard.writeText(url.toString());
+            if (shareStatus) shareStatus.textContent = 'Setup link copied.';
+        } catch {
+            window.history.replaceState({}, '', url);
+            if (shareStatus) shareStatus.textContent = 'Setup link ready in the address bar.';
+        }
     }
 
     function getPlan(recipe, requestedOutput) {
@@ -31,7 +75,7 @@
     function addResource(icon, name, amount, detail) {
         const card = document.createElement('div');
         card.className = 'resource';
-        card.innerHTML = `<span class="resource-icon">${icon}</span><div><strong>${amount}</strong><span>${name}</span><small>${detail}</small></div>`;
+        card.innerHTML = `<span class="resource-icon" aria-hidden="true">${icon}</span><div class="resource-main"><strong>${amount}</strong><span>${name}</span></div><small class="resource-detail">${detail}</small>`;
         $('resource-list').appendChild(card);
     }
 
@@ -53,6 +97,7 @@
         $('summary-barrels').textContent = `${plan.batches}`;
         $('summary-time').textContent = `${recipe.sealingDays}d`;
         $('summary-input').textContent = liters(plan.liquidInput);
+        $('timeline-total').textContent = `${recipe.sealingDays}d sealing`;
 
         const resourceList = $('resource-list');
         resourceList.innerHTML = '';
@@ -81,8 +126,12 @@
     }
 
     populateRecipes();
+    loadSetupFromUrl();
+    setTheme(localStorage.getItem('brew-barrel-theme') || 'moss');
     const update = () => render(dataset.find(recipe => recipe.id === select.value) || dataset[0]);
     select.addEventListener('change', update);
     targetInput.addEventListener('input', update);
+    if (themeSelect) themeSelect.addEventListener('change', event => setTheme(event.target.value));
+    if (shareButton) shareButton.addEventListener('click', shareSetup);
     update();
 })();

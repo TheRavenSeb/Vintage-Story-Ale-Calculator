@@ -11,23 +11,45 @@
 </head>
 <body>
     <header class="site-header">
-        <a class="brand" href="./">Brew &amp; Barrel</a>
-        <a class="source-link" href="https://github.com/TheRavenSeb/Vintage-Story-Ale-Calculator">View source ↗</a>
+        <div class="site-mark" aria-hidden="true">✦</div>
+        <div class="site-title">
+            <p class="version-line">FIELD NOTES · VERSION 1.0.0</p>
+            <a class="brand" href="./">Brew &amp; Barrel</a>
+            <p class="tagline">Plan the long road from ingredients to alcohol.</p>
+        </div>
+        <div class="header-actions">
+            <label class="theme-control" for="theme-select"><span>Theme</span>
+                <select id="theme-select" aria-label="Choose a color theme">
+                    <option value="moss">Moss &amp; paper</option>
+                    <option value="forge">Night forge</option>
+                    <option value="fire">Night fire</option>
+                    <option value="clay">Clay &amp; copper</option>
+                </select>
+            </label>
+            <button id="share-setup" type="button">Share setup</button>
+        </div>
     </header>
 
     <main>
-        <section class="hero">
-            <p class="eyebrow">Vintage Story brewing planner</p>
-            <h1>Make a batch.<br><em>Waste less juice.</em></h1>
-            <p class="hero-copy">Choose a drink and a target output. We’ll map the ingredients, barrels, fermentation, and distillation steps.</p>
-            <a class="start-link" href="#setup">START HERE <span>↓</span></a>
+        <section class="hero" aria-labelledby="hero-title">
+            <div class="hero-copy-block">
+                <p class="eyebrow">VINTAGE STORY BREWING CALCULATOR</p>
+                <h1 id="hero-title">Make a batch.<br><em>Waste less time.</em></h1>
+                <p class="hero-copy">Choose an alcohol and tell us how much you want. We’ll map every barrel stage, resource, and sealing day.</p>
+                <p class="source-blurb">Data verified against the <a href="https://wiki.vintagestory.at/Alcohol_brewing">Vintage Story Wiki</a>.</p>
+            </div>
+            <div class="hero-start"><p class="eyebrow">START HERE</p><a class="start-link" href="#setup">Choose your brew <span>↓</span></a></div>
         </section>
 
         <section class="card setup-card" id="setup">
-            <div class="section-heading"><span class="step-number">01</span><div><p class="eyebrow">Your brew</p><h2>Choose a recipe</h2></div></div>
+            <div class="section-heading"><span class="step-number">01</span><div><p class="eyebrow">YOUR BREW</p><h2>Choose an alcohol</h2></div></div>
             <div class="form-grid">
-                <label class="field" for="ale-select">Alcohol type<select id="ale-select"></select></label>
-                <label class="field" for="target-output">Desired fermented alcohol<span class="input-with-unit"><input id="target-output" type="number" min="1" step="1" value="50"><span>L</span></span></label>
+                <div class="field recipe-choice-group">
+                    <span class="field-label">Alcohol type</span>
+                    <div id="recipe-options" class="recipe-options" role="radiogroup" aria-label="Alcohol type"></div>
+                    <select id="ale-select" class="sr-only" tabindex="-1" aria-hidden="true"></select>
+                </div>
+                <label class="field amount-field" for="target-output"><span class="field-label">How much alcohol?</span><span class="input-with-unit"><input id="target-output" type="number" min="1" step="1" value="50" aria-describedby="amount-help"><span>L</span></span><small id="amount-help">Target fermented alcohol</small></label>
             </div>
             <p class="hint" id="recipe-hint"></p>
         </section>
@@ -43,13 +65,13 @@
         </section>
 
         <section class="card requirements-card">
-            <div class="section-heading"><span class="step-number">03</span><div><p class="eyebrow">Resources required</p><h2>Shopping list</h2></div></div>
+            <div class="section-heading"><span class="step-number">03</span><div><p class="eyebrow">Shopping list</p><h2>Resources required</h2></div><span class="section-symbol" aria-hidden="true">⌁</span></div>
             <div class="resource-grid" id="resource-list"></div>
             <p class="small-note">Whole items are rounded up. Liquid volumes stay exact.</p>
         </section>
 
         <section class="card timeline-card">
-            <div class="section-heading"><span class="step-number">04</span><div><p class="eyebrow">The long way round</p><h2>Process timeline</h2></div></div>
+            <div class="section-heading"><span class="step-number">04</span><div><p class="eyebrow">The long way round</p><h2>Process timeline</h2></div><strong class="timeline-total" id="timeline-total">—</strong></div>
             <div class="timeline" id="timeline"></div>
         </section>
 
@@ -58,8 +80,10 @@
             <div id="brew-notes"></div>
         </section>
 
-        <p class="data-note">Values verified for Vintage Story 1.21.5 against the <a href="https://wiki.vintagestory.at/Alcohol_brewing">Alcohol brewing wiki</a>. This is an independent fan tool and is not affiliated with Anego Studios or Vintage Story.</p>
+        <section class="important-note" aria-label="Important note"><strong>!</strong><p><b>One recipe at a time.</b> Vintage Story barrels process one recipe per batch. This calculator keeps every stage aligned to the alcohol you selected.</p></section>
     </main>
+
+    <footer><p>Independent fan tool · Not affiliated with Anego Studios or Vintage Story.</p><p><a href="https://wiki.vintagestory.at/Alcohol_brewing">Source &amp; process notes</a> · <span id="share-status" role="status"></span></p></footer>
 
     <script src="alcohol.js"></script>
     <script src="app.js"></script>
