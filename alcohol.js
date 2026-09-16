@@ -26,5 +26,43 @@ const alcohols = [
     { id: 'cassava_ale', name: 'Cassava Ale', category: 'grain', source: 'Cassava flour + Water', inputType: 'grain', outputPerBatch: 10, inputWaterPerBatch: 50, inputFlourPerBatch: 50, inputLiquidPerBatch: 50, sealingDays: 14, distillRatio: 20, nutrition: 'Grain' }
 ];
 
+// Starting-product conversions from the Vintage Story Wiki (1.21.5).
+const inputRules = {
+    fruit: { inputLabel: 'Fruit', inputUnit: 'items', liquidPerInput: 5 / 16, inputIcon: '🍎', inputDetail: '16 fruit makes 5 L juice', defaultInput: 160 },
+    honey: { inputLabel: 'Honeycombs', inputUnit: 'items', liquidPerInput: 1 / 5, inputIcon: '🍯', inputDetail: '5 honeycombs make 1 L honey', defaultInput: 250 },
+    grain: { inputLabel: 'Flour', inputUnit: 'items', liquidPerInput: 1, inputIcon: '🌾', inputDetail: '5 flour and 5 L water make 1 L ale', defaultInput: 50 }
+};
+
+const ingredientImages = {
+    'Apple juice': 'fruit/Fruit-redapple.png',
+    'Cherry juice': 'fruit/Fruit-cherry.png',
+    'Peach juice': 'fruit/Fruit-peach.png',
+    'Orange juice': 'fruit/Fruit-orange.png',
+    'Mango juice': 'fruit/Fruit-mango.png',
+    'Lychee juice': 'fruit/Fruit-lychee.png',
+    'Pomegranate juice': 'fruit/Fruit-pomegranate.png',
+    'Pear juice': 'fruit/Fruit-pear.png',
+    'Blueberry juice': 'fruit/Fruit-blueberry.png',
+    'Cranberry juice': 'fruit/Fruit-cranberry.png',
+    'Red currant juice': 'fruit/Fruit-redcurrant.png',
+    'White currant juice': 'fruit/Fruit-whitecurrant.png',
+    'Black currant juice': 'fruit/Fruit-blackcurrant.png',
+    'Saguaro juice': 'fruit/Fruit-saguaro.png',
+    'Pineapple juice': 'fruit/Fruit-pineapple.png',
+    'Breadfruit juice': 'fruit/Fruit-breadfruit.png',
+    'Spelt flour + Water': 'grain/Grain-spelt.png',
+    'Rice flour + Water': 'grain/Grain-rice.png',
+    'Rye flour + Water': 'grain/Grain-rye.png',
+    'Amaranth flour + Water': 'grain/Grain-amaranth.png',
+    'Cassava flour + Water': 'grain/Grain-cassava.png'
+};
+
+alcohols.forEach(recipe => {
+    Object.assign(recipe, inputRules[recipe.inputType]);
+    recipe.inputImage = recipe.inputType === 'honey' ? 'Honeycomb.png' : ingredientImages[recipe.source];
+    if (recipe.inputType === 'fruit') recipe.inputLabel = recipe.source.replace(/ juice$/, '');
+    if (recipe.inputType === 'grain') recipe.inputLabel = recipe.source.split(' + ')[0];
+});
+
 if (typeof window !== 'undefined') window.alcohols = alcohols;
 if (typeof module !== 'undefined' && module.exports) module.exports = alcohols;

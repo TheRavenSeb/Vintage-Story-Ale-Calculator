@@ -2,7 +2,7 @@
 
 A small, local-first calculator for planning fermented and distilled alcohol in Vintage Story.
 
-Choose a recipe and desired output to see the required fruit, honeycombs, flour, water, barrels, fermentation time, and optional distillation output. The site is plain HTML, CSS, and JavaScript and deploys directly to GitHub Pages.
+Choose a recipe and starting product amount to see the required liquid, fermented output, full 50 L barrels, any partial barrel, fermentation time, and optional distillation output. The site is plain HTML, CSS, and JavaScript and deploys directly to GitHub Pages.
 
 ## Data source
 

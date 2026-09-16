@@ -35,7 +35,7 @@
             <div class="hero-copy-block">
                 <p class="eyebrow">VINTAGE STORY BREWING CALCULATOR</p>
                 <h1 id="hero-title">Make a batch.<br><em>Waste less time.</em></h1>
-                <p class="hero-copy">Choose an alcohol and tell us how much you want. We’ll map every barrel stage, resource, and sealing day.</p>
+                <p class="hero-copy">Choose an alcohol and tell us what you’re starting with. We’ll map every barrel stage, resource, and sealing day.</p>
                 <p class="source-blurb">Data verified against the <a href="https://wiki.vintagestory.at/Alcohol_brewing">Vintage Story Wiki</a>.</p>
             </div>
             <div class="hero-start"><p class="eyebrow">START HERE</p><a class="start-link" href="#setup">Choose your brew <span>↓</span></a></div>
@@ -49,7 +49,7 @@
                     <div id="recipe-options" class="recipe-options" role="radiogroup" aria-label="Alcohol type"></div>
                     <select id="ale-select" class="sr-only" tabindex="-1" aria-hidden="true"></select>
                 </div>
-                <label class="field amount-field" for="target-output"><span class="field-label">How much alcohol?</span><span class="input-with-unit"><input id="target-output" type="number" min="1" step="1" value="50" aria-describedby="amount-help"><span>L</span></span><small id="amount-help">Target fermented alcohol</small></label>
+                <label class="field amount-field" for="input-amount"><span class="field-label" id="amount-label">Starting fruit</span><span class="input-with-unit"><input id="input-amount" type="number" min="0" step="1" value="160" aria-describedby="amount-help"><span id="input-unit">items</span></span><small id="amount-help">Starting product used for the brew</small></label>
             </div>
             <p class="hint" id="recipe-hint"></p>
         </section>
@@ -58,7 +58,8 @@
             <div class="section-heading"><span class="step-number">02</span><div><p class="eyebrow">Quick summary</p><h2>Your batch at a glance</h2></div></div>
             <div class="stat-grid">
                 <div class="stat"><strong id="summary-output">—</strong><span>fermented output</span></div>
-                <div class="stat"><strong id="summary-barrels">—</strong><span>barrel runs</span></div>
+                <div class="stat"><strong id="summary-barrels">—</strong><span>full 50 L barrels</span></div>
+                <div class="stat"><strong id="summary-partial">—</strong><span>partial barrel</span></div>
                 <div class="stat"><strong id="summary-time">—</strong><span>sealing time</span></div>
                 <div class="stat"><strong id="summary-input">—</strong><span>liquid input</span></div>
             </div>

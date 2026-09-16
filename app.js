@@ -2,9 +2,9 @@
 (function () {
     const dataset = window.alcohols || [];
     const select = document.getElementById('ale-select');
-    const targetInput = document.getElementById('target-output');
+    const inputAmount = document.getElementById('input-amount');
     const recipeOptions = document.getElementById('recipe-options');
-    if (!select || !targetInput || !dataset.length) return;
+    if (!select || !inputAmount || !dataset.length) return;
 
     const $ = id => document.getElementById(id);
     const themeSelect = $('theme-select');
@@ -13,6 +13,7 @@
     const whole = value => Math.ceil(value);
     const liters = value => `${value.toFixed(1).replace('.0', '')} L`;
     const item = value => `${whole(value).toLocaleString()} ${whole(value) === 1 ? 'item' : 'items'}`;
+    let hasUserInput = false;
 
     function populateRecipes() {
         dataset.forEach((recipe, index) => {
@@ -41,7 +42,10 @@
             const radio = recipeOptions.querySelector(`input[value="${select.value}"]`);
             if (radio) radio.checked = true;
         }
-        if (params.get('output')) targetInput.value = Math.max(1, Number(params.get('output')) || 50);
+        if (params.get('input')) {
+            inputAmount.value = Math.max(0, Number(params.get('input')) || 0);
+            hasUserInput = true;
+        }
     }
 
     function setTheme(theme) {
@@ -59,7 +63,7 @@
 
     async function shareSetup() {
         const url = new URL(window.location.href);
-        url.search = new URLSearchParams({ recipe: select.value, output: targetInput.value }).toString();
+        url.search = new URLSearchParams({ recipe: select.value, input: inputAmount.value }).toString();
         try {
             await navigator.clipboard.writeText(url.toString());
             if (shareStatus) shareStatus.textContent = 'Setup link copied.';
@@ -69,18 +73,49 @@
         }
     }
 
-    function getPlan(recipe, requestedOutput) {
-        const batches = Math.max(1, whole(requestedOutput / recipe.outputPerBatch));
-        const output = batches * recipe.outputPerBatch;
-        const liquidInput = batches * recipe.inputLiquidPerBatch;
+    function getPlan(recipe, startingProduct) {
+        const liquidInput = startingProduct * recipe.liquidPerInput;
+        const fullBarrels = Math.floor(liquidInput / 50);
+        const partialLiquid = liquidInput - fullBarrels * 50;
+        const output = liquidInput * recipe.outputPerBatch / 50;
         const distilled = output / recipe.distillRatio;
-        return { batches, output, liquidInput, distilled, aquaVitae: distilled / 2, distillationSeconds: output * 20 };
+        return {
+            startingProduct,
+            liquidInput,
+            fullBarrels,
+            partialLiquid: partialLiquid < 0.0001 ? 0 : partialLiquid,
+            barrels: fullBarrels + (partialLiquid > 0.0001 ? 1 : 0),
+            output,
+            distilled,
+            aquaVitae: distilled / 2,
+            distillationSeconds: output * 20
+        };
     }
 
-    function addResource(icon, name, amount, detail) {
+    function addResource(image, name, amount, detail, fallbackIcon = '•') {
         const card = document.createElement('div');
         card.className = 'resource';
-        card.innerHTML = `<span class="resource-icon" aria-hidden="true">${icon}</span><div class="resource-main"><strong>${amount}</strong><span>${name}</span></div><small class="resource-detail">${detail}</small>`;
+        const icon = document.createElement('span');
+        icon.className = 'resource-icon';
+        icon.setAttribute('aria-hidden', 'true');
+        if (image) {
+            const imageElement = document.createElement('img');
+            imageElement.src = `./images/${image}`;
+            imageElement.alt = '';
+            imageElement.addEventListener('error', () => {
+                icon.textContent = fallbackIcon;
+            }, { once: true });
+            icon.appendChild(imageElement);
+        } else {
+            icon.textContent = fallbackIcon;
+        }
+        const main = document.createElement('div');
+        main.className = 'resource-main';
+        main.innerHTML = `<strong>${amount}</strong><span>${name}</span>`;
+        const resourceDetail = document.createElement('small');
+        resourceDetail.className = 'resource-detail';
+        resourceDetail.textContent = detail;
+        card.append(icon, main, resourceDetail);
         $('resource-list').appendChild(card);
     }
 
@@ -91,15 +126,17 @@
     }
 
     function render(recipe) {
-        const requestedOutput = Math.max(1, Number(targetInput.value) || recipe.outputPerBatch);
-        const plan = getPlan(recipe, requestedOutput);
-        const inputBarrels = whole(plan.liquidInput / 50);
-        const fruitNeeded = plan.liquidInput / 5 * 16;
-        const honeycombsNeeded = plan.liquidInput * 5;
+        const startingProduct = Math.max(0, Number(inputAmount.value) || 0);
+        const plan = getPlan(recipe, startingProduct);
+        const partialBarrel = plan.partialLiquid ? ` + ${liters(plan.partialLiquid)} partial` : '';
 
         $('recipe-hint').textContent = `${recipe.source} · ${recipe.outputPerBatch} L output per full barrel · ${recipe.sealingDays} days sealed`;
+        $('amount-label').textContent = `Starting ${recipe.inputLabel.toLowerCase()}`;
+        $('amount-help').textContent = `Produces ${liters(recipe.liquidPerInput)} liquid per ${recipe.inputUnit === 'items' ? 'item' : recipe.inputUnit}`;
+        $('input-unit').textContent = recipe.inputUnit;
         $('summary-output').textContent = liters(plan.output);
-        $('summary-barrels').textContent = `${plan.batches}`;
+        $('summary-barrels').textContent = plan.fullBarrels.toLocaleString();
+        $('summary-partial').textContent = plan.partialLiquid ? liters(plan.partialLiquid) : 'None';
         $('summary-time').textContent = `${recipe.sealingDays}d`;
         $('summary-input').textContent = liters(plan.liquidInput);
         $('timeline-total').textContent = `${recipe.sealingDays}d sealing`;
@@ -107,21 +144,21 @@
         const resourceList = $('resource-list');
         resourceList.innerHTML = '';
         if (recipe.inputType === 'fruit') {
-            addResource('🍎', 'Fruit to press', item(fruitNeeded), '16 fruit makes 5 L juice');
-            addResource('🪣', 'Fruit juice', liters(plan.liquidInput), 'Ferment in a barrel');
+            addResource(recipe.inputImage, 'Fruit to press', item(plan.startingProduct), recipe.inputDetail, recipe.inputIcon);
+            addResource('Barrel.png', 'Fruit juice', liters(plan.liquidInput), 'Ferment in a barrel', '🛢️');
         } else if (recipe.inputType === 'honey') {
-            addResource('🍯', 'Honeycombs', item(honeycombsNeeded), '5 honeycombs make 1 L honey');
-            addResource('🪣', 'Honey', liters(plan.liquidInput), 'Ferment in a barrel');
+            addResource(recipe.inputImage, 'Honeycombs', item(plan.startingProduct), recipe.inputDetail, recipe.inputIcon);
+            addResource('Honeyportion.png', 'Honey', liters(plan.liquidInput), 'Ferment in a barrel', '🍯');
         } else {
-            addResource('🌾', recipe.source.split(' + ')[0], item(plan.batches * recipe.inputFlourPerBatch), '5 flour per 1 L ale');
-            addResource('💧', 'Water', liters(plan.batches * recipe.inputWaterPerBatch), '5 L water per 1 L ale');
+            addResource(recipe.inputImage, recipe.source.split(' + ')[0], item(plan.startingProduct), recipe.inputDetail, recipe.inputIcon);
+            addResource('Water.png', 'Water', liters(plan.liquidInput), '5 L water per 5 flour', '💧');
         }
-        addResource('🛢️', 'Barrels', item(inputBarrels), '50 L maximum per barrel');
+        addResource('Barrel.png', 'Barrels', item(plan.barrels), `${plan.fullBarrels} full 50 L${partialBarrel}`, '🛢️');
 
         $('timeline').innerHTML = `
             <div class="timeline-step"><span>01</span><div><strong>Prepare the ingredients</strong><p>${recipe.inputType === 'fruit' ? 'Press the fruit into juice.' : recipe.inputType === 'honey' ? 'Squeeze honeycombs into honey.' : 'Combine flour and water in the barrel.'}</p></div><time>now</time></div>
-            <div class="timeline-step"><span>02</span><div><strong>Seal ${plan.batches} ${plan.batches === 1 ? 'barrel' : 'barrels'}</strong><p>Leave the ${recipe.name.toLowerCase()} sealed until fermentation is complete.</p></div><time>${recipe.sealingDays}d</time></div>
-            <div class="timeline-step"><span>03</span><div><strong>Enjoy your ${recipe.name.toLowerCase()}</strong><p>${recipe.outputPerBatch === 50 ? 'Each full barrel produces 50 L.' : `Each full barrel produces ${recipe.outputPerBatch} L.`} Fermented alcohol provides 80 satiety per liter.</p></div><time>ready</time></div>
+            <div class="timeline-step"><span>02</span><div><strong>Seal ${plan.barrels} ${plan.barrels === 1 ? 'barrel' : 'barrels'}</strong><p>Leave the ${recipe.name.toLowerCase()} sealed until fermentation is complete.</p></div><time>${recipe.sealingDays}d</time></div>
+            <div class="timeline-step"><span>03</span><div><strong>Enjoy your ${recipe.name.toLowerCase()}</strong><p>${plan.fullBarrels} full 50 L barrel${plan.fullBarrels === 1 ? '' : 's'}${plan.partialLiquid ? ` and one ${liters(plan.partialLiquid)} partial barrel` : ''} produce ${liters(plan.output)}. Fermented alcohol provides 80 satiety per liter.</p></div><time>ready</time></div>
             <div class="timeline-step optional"><span>04</span><div><strong>Optional: distill</strong><p>${liters(plan.output)} fermented alcohol becomes ${liters(plan.distilled)} distilled alcohol.</p></div><time>${formatDuration(plan.distillationSeconds)}</time></div>`;
 
         $('brew-notes').innerHTML = `
@@ -139,9 +176,16 @@
         // Use the default theme when storage is blocked.
     }
     setTheme(savedTheme);
-    const update = () => render(dataset.find(recipe => recipe.id === select.value) || dataset[0]);
+    const update = () => {
+        const recipe = dataset.find(item => item.id === select.value) || dataset[0];
+        if (!hasUserInput) inputAmount.value = recipe.defaultInput;
+        render(recipe);
+    };
     select.addEventListener('change', update);
-    targetInput.addEventListener('input', update);
+    inputAmount.addEventListener('input', () => {
+        hasUserInput = true;
+        update();
+    });
     if (themeSelect) themeSelect.addEventListener('change', event => setTheme(event.target.value));
     if (shareButton) shareButton.addEventListener('click', shareSetup);
     update();
