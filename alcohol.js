@@ -28,9 +28,9 @@ const alcohols = [
 
 // Starting-product conversions from the Vintage Story Wiki (1.21.5).
 const inputRules = {
-    fruit: { inputLabel: 'Fruit', inputUnit: 'items', liquidPerInput: 5 / 16, inputIcon: '🍎', inputDetail: '16 fruit makes 5 L juice', defaultInput: 160 },
-    honey: { inputLabel: 'Honeycombs', inputUnit: 'items', liquidPerInput: 1 / 5, inputIcon: '🍯', inputDetail: '5 honeycombs make 1 L honey', defaultInput: 250 },
-    grain: { inputLabel: 'Flour', inputUnit: 'items', liquidPerInput: 1, inputIcon: '🌾', inputDetail: '5 flour and 5 L water make 1 L ale', defaultInput: 50 }
+    fruit: { inputLabel: 'Fruit', inputUnit: 'items', liquidPerInput: 5 / 16,  inputDetail: '16 fruit makes 5 L juice', defaultInput: 160 },
+    honey: { inputLabel: 'Honeycombs', inputUnit: 'items', liquidPerInput: 1 / 5,  inputDetail: '5 honeycombs make 1 L honey', defaultInput: 250 },
+    grain: { inputLabel: 'Flour', inputUnit: 'items', liquidPerInput: 1,  inputDetail: '5 flour and 5 L water make 1 L ale', defaultInput: 50 }
 };
 
 const ingredientImages = {
